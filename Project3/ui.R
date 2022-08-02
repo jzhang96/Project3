@@ -1,6 +1,14 @@
 library(DT)
 library(shiny)
 library(shinydashboard)
+library(shinycssloaders)
+
+bike = read.csv("C:/Users/LAILA/Desktop/project3/SeoulBikeData.csv")
+colnames(bike) <- c("Date","Rented_Bike_count", "Hour", "Temperature", "Humidity",
+                    "Windspeed", "Visibility", "Dew_point_temperature",
+                    "Solar_radiation", "Rainfall", "Snowfall", "Seasons", "Holiday",
+                    "Functional_Day")
+
 ui <- fluidPage(
   titlePanel("Seoul Bike Sharing Demand"),
   
@@ -24,19 +32,19 @@ ui <- fluidPage(
       radioButtons(inputId = "plot",
                    label = h5(strong("Select the Plot Type")),
                    choices = c("Seasons", "Holiday", 
-                               "Functional Day"),
+                               "Functional_Day"),
                    selected = "Seasons"),
       br(),
       h4("You can find the", strong("basic numeric summarise"), "for all numeric variables below:"),
       selectInput(inputId =  "var",
                   label =  h5(strong("Varibles to Summarize")),
-                  choices = c("Rented Bike count", "Hour", 
+                  choices = c("Rented_Bike_count", "Hour", 
                               "Temperature", "Humidity",
                               "Windspeed", "Visibility", 
-                              "Dew point temperature",
-                              "Solar radiation", 
+                              "Dew_point_temperature",
+                              "Solar_radiation", 
                               "Rainfall", "Snowfall" ),
-                  selected = "Rented Bike count"),
+                  selected = "Rented_Bike_count"),
       numericInput(inputId = "rounding",
                    label =   h5(strong("Select the number of digits for rounding")),
                    value = 2,
@@ -84,28 +92,57 @@ predictors"),
       and calculations can become complex when there are many class variables.")
     ),
     tabPanel(
-      h4("Model Fitting"),
-      mainPanel(numericInput(inputId = "split",
-                             label = "Proportion for Training",
-                             value = 0.7,
-                             min = 0.1,
-                             max = 1,
-                             step = 0.1),
-                checkboxGroupInput(inputId = "predictor", 
-                                   label = "Predicotrs used to fit model",
-                                   choices = list("Hour", "Temperature", "Humidity",
-                                                  "Windspeed", "Visibility", "Dew point",
-                                                  "Solar radiation", "Rainfall", "Snowfall", "Seasons", "Holiday",
-                                                  "Functional Day")),
-                strong("Use 5-fold Cross Validation?"),
-                checkboxInput(inputId = "crossv",
-                              label = "Yes"
-                ),
-                actionButton(inputId = "act",
-                             label = "Fit Model"))
-    ),
-    tabPanel(
-      h4("Prediction")),
+      h4("Model Fitting & Prediction"),
+      box(
+        selectInput(
+          "SelectX",
+          label = "Select variables:",
+          choices = names(bike),
+          multiple = TRUE,
+          selected = names(bike)
+        ),
+        solidHeader = TRUE,
+        width = "3",
+        status = "primary",
+        title = "X variable"
+      ),
+      box(
+        selectInput("SelectY", label = "Select variable to predict:", choices = c("Rented_Bike_count", "Hour", "Temperature", "Humidity",
+                                                                                  "Windspeed", "Visibility", "Dew_point_temperature",
+                                                                                  "Solar_radiation", "Rainfall", "Snowfall")),
+        solidHeader = TRUE,
+        width = "3",
+        status = "primary",
+        title = "Y variable"
+      ),
+      dashboardSidebar(
+        sliderInput(
+          "Slider1",
+          label = h3("Train/Test Split %"),
+          min = 0,
+          max = 100,
+          value = 75
+        ),
+        textOutput("cntTrain"),
+        textOutput("cntTest")
+      ),
+      tabBox(
+        id = "tabset1",
+        height = "1000px",
+        width = 12,
+        tabPanel(
+          "Model",
+          box(
+            withSpinner(verbatimTextOutput("Model")),
+            width = 6,
+            title = "Model Summary"
+          )
+        ),
+        tabPanel(
+          "Prediction",
+          box(withSpinner(plotOutput("Prediction")), width = 6, title = "Best Fit Line"),
+          box(withSpinner(plotOutput("residualPlots")), width = 6, title = "Diagnostic Plots")
+        ))),
     tabPanel(
       h4("Data"),
       DT::dataTableOutput("dt"),
